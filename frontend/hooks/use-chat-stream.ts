@@ -12,15 +12,20 @@ export interface ChatMessage {
 }
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:3001';
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ??
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    : 'http://localhost:3001');
 
 export function useChatStream() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const sendMessage = useCallback(async (content: string, sessionId = 'default') => {
     const trimmed = content.trim();
     if (!trimmed || isStreaming) return;
+    setError(null);
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -84,6 +89,21 @@ export function useChatStream() {
           }
         }
       }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unable to connect to chat server.';
+      setError(message);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId
+            ? {
+                ...msg,
+                content:
+                  'Connection error. Make sure backend is running on `http://localhost:3001` and try again.',
+              }
+            : msg,
+        ),
+      );
     } finally {
       setIsStreaming(false);
     }
@@ -98,6 +118,7 @@ export function useChatStream() {
     messages,
     history,
     isStreaming,
+    error,
     sendMessage,
   };
 }

@@ -12,7 +12,11 @@ Production-oriented starter structure for:
 .
 ├── .env.example
 ├── docker-compose.yml
+├── package.json
 ├── backend
+│   ├── package.json
+│   ├── nest-cli.json
+│   ├── tsconfig.json
 │   ├── prisma
 │   │   └── schema.prisma
 │   └── src
@@ -26,6 +30,10 @@ Production-oriented starter structure for:
 │               ├── chat-model.factory.ts
 │               └── chat-model.provider.ts
 └── frontend
+    ├── package.json
+    ├── next.config.mjs
+    ├── tailwind.config.ts
+    ├── tsconfig.json
     ├── app
     │   ├── globals.css
     │   ├── layout.tsx
@@ -47,7 +55,7 @@ Production-oriented starter structure for:
 ## 2) Prerequisites
 
 - Node.js 20+
-- npm / pnpm / yarn
+- npm 10+
 - Docker + Docker Compose
 - Ollama installed locally (if using default provider)
 
@@ -71,38 +79,43 @@ Important keys:
 - `AI_MODEL_NAME`: e.g. `llama3.1`, `gpt-4o-mini`, `claude-3-5-sonnet-latest`
 - `NEXT_PUBLIC_API_URL`: frontend -> backend URL
 
-## 4) Install Dependencies
+## 4) Install Dependencies (One Command)
 
-This scaffold currently includes core source files. Install framework dependencies in each app:
-
-### Backend (example)
+From project root:
 
 ```bash
-cd backend
-npm init -y
-npm install @nestjs/common @nestjs/core @nestjs/platform-express reflect-metadata rxjs
-npm install @langchain/core @langchain/community langchain @langchain/openai @langchain/anthropic
-npm install prisma @prisma/client
-npm install -D typescript ts-node @types/node
+npm install
 ```
 
-### Frontend (example)
+This project uses npm workspaces, so one install command sets up both `backend` and `frontend`.
+
+Optional (if you want to regenerate official shadcn config files):
 
 ```bash
-cd ../frontend
-npx create-next-app@latest . --ts --tailwind --app --eslint --use-npm
-npm install react-markdown clsx tailwind-merge
-```
-
-Then initialize shadcn/ui (required):
-
-```bash
+cd frontend
 npx shadcn-ui@latest init
 ```
 
-If prompted, choose the `frontend/components` and `frontend/lib` conventions used here.
+## 5) Run Locally (without Docker)
 
-## 5) Run with Docker Compose
+From project root:
+
+```bash
+npm run dev
+```
+
+This starts both apps:
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:3001`
+
+You can also run each app separately:
+
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
+
+## 6) Run with Docker Compose
 
 From repo root:
 
@@ -114,22 +127,6 @@ Services:
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:3001`
 - Postgres: `localhost:5432`
-
-## 6) Run Locally (without Docker)
-
-Use two terminals.
-
-Terminal A (backend):
-```bash
-cd backend
-npm run start:dev
-```
-
-Terminal B (frontend):
-```bash
-cd frontend
-npm run dev
-```
 
 ## 7) Chat Streaming API
 
@@ -179,4 +176,3 @@ No controller changes are needed when switching providers.
 - DB errors:
   - Validate `DATABASE_URL`
   - Confirm Postgres container is healthy
-

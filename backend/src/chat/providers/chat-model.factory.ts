@@ -15,20 +15,20 @@ export class ChatModelFactory implements ChatModelProvider {
       return new ChatOpenAI({
         model,
         apiKey: process.env.OPENAI_API_KEY,
-      });
+      }) as unknown as BaseChatModel;
     }
 
     if (provider === 'anthropic') {
       return new ChatAnthropic({
         model,
         apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+      }) as unknown as BaseChatModel;
     }
 
     return new ChatOllama({
       model,
       baseUrl: process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434',
       temperature: 0.2,
-    });
+    }) as unknown as BaseChatModel;
   }
 }
