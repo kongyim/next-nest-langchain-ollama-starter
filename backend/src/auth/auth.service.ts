@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { ThemeMode, User } from '@prisma/client';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +11,8 @@ export interface AuthPayload {
   exp: number;
 }
 
+type AuthUser = Pick<User, 'id' | 'email' | 'preferredTheme'>;
+
 @Injectable()
 export class AuthService {
   private readonly tokenTtlSeconds = 60 * 60 * 24 * 7;
@@ -20,7 +22,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(email: string, password: string): Promise<{ token: string; user: Pick<User, 'id' | 'email'> }> {
+  async register(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
     const normalizedEmail = email.trim().toLowerCase();
     this.validateCredentials(normalizedEmail, password);
 
@@ -38,6 +40,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        preferredTheme: true,
       },
     });
 
@@ -45,7 +48,7 @@ export class AuthService {
     return { token, user };
   }
 
-  async login(email: string, password: string): Promise<{ token: string; user: Pick<User, 'id' | 'email'> }> {
+  async login(email: string, password: string): Promise<{ token: string; user: AuthUser }> {
     const normalizedEmail = email.trim().toLowerCase();
     this.validateCredentials(normalizedEmail, password);
 
@@ -60,6 +63,7 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        preferredTheme: true,
       },
     });
 
@@ -70,14 +74,37 @@ export class AuthService {
     };
   }
 
-  async findUserById(userId: string): Promise<Pick<User, 'id' | 'email'> | null> {
+  async findUserById(userId: string): Promise<AuthUser | null> {
     return this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
+        preferredTheme: true,
       },
     });
+  }
+
+  async updatePreferences(userId: string, themeMode: string): Promise<{ user: AuthUser }> {
+    const normalized = themeMode.trim().toLowerCase();
+    if (normalized !== 'light' && normalized !== 'dark') {
+      throw new BadRequestException('themeMode must be "light" or "dark".');
+    }
+
+    const preferredTheme = normalized === 'dark' ? ThemeMode.DARK : ThemeMode.LIGHT;
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        preferredTheme,
+      },
+      select: {
+        id: true,
+        email: true,
+        preferredTheme: true,
+      },
+    });
+
+    return { user };
   }
 
   verifyAuthToken(token: string): AuthPayload {

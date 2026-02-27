@@ -12,10 +12,16 @@ enum ChatRole {
   ASSISTANT
 }
 
+enum ThemeMode {
+  LIGHT
+  DARK
+}
+
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
   passwordHash String
+  preferredTheme ThemeMode   @default(LIGHT)
   lastLoginAt  DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

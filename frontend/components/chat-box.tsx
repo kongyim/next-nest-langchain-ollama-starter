@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   Avatar,
@@ -17,8 +17,11 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { useColorMode } from '@/app/mui-provider';
 import { useChatStream } from '@/hooks/use-chat-stream';
 
 export function ChatBox() {
@@ -40,9 +43,25 @@ export function ChatBox() {
     createSession,
     selectSession,
     deleteSession,
+    updateThemePreference,
   } = useChatStream();
 
   const sortedMessages = useMemo(() => messages, [messages]);
+  const { mode, setColorMode } = useColorMode();
+
+  useEffect(() => {
+    if (!user) return;
+    const nextMode = user.preferredTheme === 'DARK' ? 'dark' : 'light';
+    setColorMode(nextMode);
+  }, [setColorMode, user]);
+
+  const handleToggleMode = () => {
+    const nextMode = mode === 'dark' ? 'light' : 'dark';
+    setColorMode(nextMode);
+    if (token) {
+      void updateThemePreference(nextMode);
+    }
+  };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,9 +79,14 @@ export function ChatBox() {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}>
         <Paper elevation={2} sx={{ width: '100%', maxWidth: 420, p: 3 }}>
-          <Typography variant="h5" fontWeight={700} gutterBottom>
-            Login
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+            <Typography variant="h5" fontWeight={700}>
+              Login
+            </Typography>
+            <IconButton onClick={handleToggleMode} aria-label="Toggle dark mode">
+              {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Sign in to see your chat history and continue conversations.
           </Typography>
@@ -104,12 +128,19 @@ export function ChatBox() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 1.5, height: '100%' }}>
         <Paper sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', overflow: 'hidden' }}>
           <Box sx={{ p: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              History
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {user?.email}
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  History
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {user?.email}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={handleToggleMode} aria-label="Toggle dark mode">
+                {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+              </IconButton>
+            </Stack>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
               <Button
                 size="small"
@@ -175,9 +206,19 @@ export function ChatBox() {
 
         <Paper sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <Box sx={{ p: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              AI Assistant
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="subtitle1" fontWeight={700}>
+                AI Assistant
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={handleToggleMode}
+                aria-label="Toggle dark mode"
+                sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+              >
+                {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+              </IconButton>
+            </Stack>
           </Box>
           <Divider />
 

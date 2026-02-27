@@ -29,7 +29,10 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import DeleteIcon from '@mui/icons-material/Delete';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import { useColorMode } from '../mui-provider';
 
 interface AdminUser {
   id: string;
@@ -94,6 +97,7 @@ const DRAWER_WIDTH = 260;
 type AdminSection = 'users' | 'training';
 
 export default function AdminPage() {
+  const { mode, toggleColorMode } = useColorMode();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState<string | null>(null);
@@ -507,9 +511,14 @@ export default function AdminPage() {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2 }}>
         <Paper elevation={2} sx={{ width: '100%', maxWidth: 420, p: 3 }}>
-          <Typography variant="h5" fontWeight={700} gutterBottom>
-            Admin Login
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+            <Typography variant="h5" fontWeight={700}>
+              Admin Login
+            </Typography>
+            <IconButton onClick={toggleColorMode} aria-label="Toggle dark mode">
+              {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Enter admin credentials configured in environment variables.
           </Typography>
@@ -546,7 +555,7 @@ export default function AdminPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f3f4f6' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Drawer
         variant="permanent"
         sx={{
@@ -560,9 +569,14 @@ export default function AdminPage() {
       >
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Toolbar>
-            <Typography variant="h6" fontWeight={700}>
-              Admin Panel
-            </Typography>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+              <Typography variant="h6" fontWeight={700}>
+                Admin Panel
+              </Typography>
+              <IconButton size="small" onClick={toggleColorMode} aria-label="Toggle dark mode">
+                {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+              </IconButton>
+            </Stack>
           </Toolbar>
           <List>
             <ListItemButton

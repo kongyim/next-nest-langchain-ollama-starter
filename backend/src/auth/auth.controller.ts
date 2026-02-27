@@ -9,6 +9,10 @@ interface AuthBody {
   password?: string;
 }
 
+interface UpdatePreferencesBody {
+  themeMode?: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -31,5 +35,14 @@ export class AuthController {
       user,
       tokenPayload: (req as Request & { user?: unknown }).user,
     };
+  }
+
+  @Post('preferences')
+  @UseGuards(AuthGuard)
+  updatePreferences(
+    @CurrentUser('sub') userId: string,
+    @Body() body: UpdatePreferencesBody,
+  ) {
+    return this.authService.updatePreferences(userId, body.themeMode ?? '');
   }
 }

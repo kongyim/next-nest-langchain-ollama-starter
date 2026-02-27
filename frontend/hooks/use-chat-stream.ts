@@ -22,6 +22,7 @@ export interface ChatSession {
 interface AuthUser {
   id: string;
   email: string;
+  preferredTheme: 'LIGHT' | 'DARK';
 }
 
 const API_URL =
@@ -234,6 +235,31 @@ export function useChatStream() {
     await loadSessions(data.token);
   }, [loadSessions]);
 
+  const updateThemePreference = useCallback(async (themeMode: 'light' | 'dark') => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_URL}/auth/preferences`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: authHeaders(token),
+        body: JSON.stringify({ themeMode }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update theme preference.');
+      }
+
+      const data = (await response.json()) as { user?: AuthUser };
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update theme preference.';
+      setError(message);
+    }
+  }, [token]);
+
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
     await authRequest(email, password);
@@ -375,5 +401,6 @@ export function useChatStream() {
     createSession,
     selectSession,
     deleteSession,
+    updateThemePreference,
   };
 }
