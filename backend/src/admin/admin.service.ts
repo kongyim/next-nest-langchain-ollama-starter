@@ -88,9 +88,7 @@ export class AdminService {
       throw new BadRequestException('Email is already registered.');
     }
 
-    const salt = randomBytes(16).toString('hex');
-    const hash = scryptSync(password, salt, 64).toString('hex');
-    const passwordHash = `${salt}:${hash}`;
+    const passwordHash = this.hashPassword(password);
 
     return this.prisma.user.create({
       data: {
@@ -103,6 +101,22 @@ export class AdminService {
         createdAt: true,
       },
     });
+  }
+
+  async resetUserPassword(userId: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: this.hashPassword(newPassword),
+      },
+      select: { id: true },
+    });
+
+    return { ok: true };
   }
 
   async deleteUser(userId: string) {
@@ -132,5 +146,11 @@ export class AdminService {
       throw new InternalServerErrorException('ADMIN_JWT_SECRET is required.');
     }
     return secret;
+  }
+
+  private hashPassword(password: string): string {
+    const salt = randomBytes(16).toString('hex');
+    const hash = scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${hash}`;
   }
 }

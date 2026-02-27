@@ -1,89 +1,101 @@
-# AI Chatbot Starter Kit
+# AI Chatbot + Admin Starter (Next.js + NestJS + PostgreSQL)
 
-Production-oriented starter structure for:
-- Frontend: Next.js (App Router) + Tailwind + shadcn/ui style components
-- Backend: NestJS + LangChain.js + SSE streaming
-- AI Provider: Ollama by default (switchable to OpenAI/Anthropic)
-- Data: PostgreSQL + Prisma
+Production-oriented starter kit with:
+- User chat app with ChatGPT-style session history
+- Admin panel for user management and model-training data operations
+- JWT auth for user/admin flows
+- NestJS backend + Next.js frontend + PostgreSQL (Prisma)
 
-## 1) Project Structure
+## Tech Stack
+
+- Frontend: Next.js 14 (App Router), React 18, MUI 7
+- Backend: NestJS 10, LangChain, SSE streaming
+- Database: PostgreSQL + Prisma
+- AI providers: Ollama (default), OpenAI, Anthropic
+
+## Features
+
+- User auth (`/auth/register`, `/auth/login`)
+- Chat sessions and messages persisted in Postgres
+- Chat sidebar history (select session to load full conversation)
+- Delete chat session
+- Streaming response via SSE (`/chat/stream`)
+- Admin login at `/admin`
+- Admin user management:
+  - List users (with last login)
+  - Create user
+  - Reset user password
+  - Delete user
+- Admin training section:
+  - Create/list/delete training entries
+  - Upload files (`.txt`, `.md`, `.csv`, `.json`, max 2MB)
+  - Queue training jobs
+  - View run/job history
+  - Eval console
+
+## Project Structure
 
 ```text
 .
 ├── .env.example
 ├── docker-compose.yml
 ├── package.json
-├── backend
-│   ├── package.json
-│   ├── nest-cli.json
-│   ├── tsconfig.json
-│   ├── prisma
-│   │   └── schema.prisma
-│   └── src
-│       ├── app.module.ts
-│       ├── main.ts
-│       └── chat
-│           ├── chat.controller.ts
-│           ├── chat.module.ts
-│           ├── chat.service.ts
-│           └── providers
-│               ├── chat-model.factory.ts
-│               └── chat-model.provider.ts
-└── frontend
-    ├── package.json
-    ├── next.config.mjs
-    ├── tailwind.config.ts
-    ├── tsconfig.json
-    ├── app
-    │   ├── globals.css
-    │   ├── layout.tsx
-    │   └── page.tsx
-    ├── components
-    │   ├── chat-box.tsx
-    │   └── ui
-    │       ├── avatar.tsx
-    │       ├── button.tsx
-    │       ├── card.tsx
-    │       ├── input.tsx
-    │       └── scroll-area.tsx
-    ├── hooks
-    │   └── use-chat-stream.ts
-    └── lib
-        └── utils.ts
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   └── src/
+│       ├── auth/
+│       ├── chat/
+│       ├── admin/
+│       ├── training/
+│       └── prisma/
+└── frontend/
+    ├── app/
+    │   ├── page.tsx
+    │   └── admin/page.tsx
+    ├── components/
+    └── hooks/
 ```
 
-## 2) Prerequisites
+## Prerequisites
 
-- Node.js 20+
+- Node.js 20+ (LTS recommended)
 - npm 10+
-- Docker + Docker Compose
-- Ollama installed locally (if using default provider)
+- Docker + Docker Compose (for Postgres)
+- Ollama installed locally if using default provider
 
 If using Ollama:
+
 ```bash
 ollama pull llama3.1
 ```
 
-## 3) Environment Variables
+## Environment Setup
 
-Copy and edit environment variables:
+1. Copy env file:
 
 ```bash
 cp .env.example .env
 ```
 
-Important keys:
-- `DATABASE_URL`: PostgreSQL connection string
-- `OLLAMA_BASE_URL`: default `http://localhost:11434`
-- `AI_PROVIDER`: `ollama` (default), `openai`, or `anthropic`
-- `AI_MODEL_NAME`: e.g. `llama3.1`, `gpt-4o-mini`, `claude-3-5-sonnet-latest`
-- `JWT_SECRET`: required signing key for user JWT
-- `ADMIN_USERNAME`: required admin username
-- `ADMIN_PASSWORD`: required admin password
-- `ADMIN_JWT_SECRET`: required signing key for admin JWT
-- `NEXT_PUBLIC_API_URL`: frontend -> backend URL
+2. Set required values in `.env`:
 
-## 4) Install Dependencies (One Command)
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `ADMIN_JWT_SECRET`
+- `NEXT_PUBLIC_API_URL`
+
+Example admin login values:
+
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+```
+
+## Install Dependencies
 
 From project root:
 
@@ -91,114 +103,117 @@ From project root:
 npm install
 ```
 
-This project uses npm workspaces, so one install command sets up both `backend` and `frontend`.
+## Run Locally
 
-Optional (if you want to regenerate official shadcn config files):
+1. Start Postgres:
 
 ```bash
-cd frontend
-npx shadcn-ui@latest init
+docker compose up -d db
 ```
 
-## 5) Run Locally (without Docker)
-
-From project root:
+2. Generate Prisma client + apply migrations:
 
 ```bash
 npm run prisma:generate -w backend
 npx prisma migrate deploy --schema backend/prisma/schema.prisma
+```
+
+3. Start frontend + backend:
+
+```bash
 npm run dev
 ```
 
-This starts both apps:
+Apps:
 - Frontend: `http://localhost:3000`
+- Admin: `http://localhost:3000/admin`
 - Backend: `http://localhost:3001`
 
-You can also run each app separately:
+## API Overview
 
-```bash
-npm run dev:backend
-npm run dev:frontend
-```
+### Auth
 
-## 6) Run with Docker Compose
-
-From repo root:
-
-```bash
-docker compose up --build
-```
-
-Services:
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:3001`
-- Postgres: `localhost:5432`
-
-## 7) Auth API
-
-Endpoints:
-- `POST /auth/register` with `{ "email": "...", "password": "..." }`
-- `POST /auth/login` with `{ "email": "...", "password": "..." }`
+- `POST /auth/register` body: `{ "email": "...", "password": "..." }`
+- `POST /auth/login` body: `{ "email": "...", "password": "..." }`
 - `GET /auth/me` with `Authorization: Bearer <token>`
 
-## 8) Chat API
+### Chat (user token required)
 
-Endpoints:
 - `GET /chat/sessions`
 - `POST /chat/sessions`
 - `GET /chat/sessions/:sessionId/messages`
-- `GET /chat/stream?message=<text>&sessionId=<id>`
-- Response: Server-Sent Events (`text/event-stream`)
+- `DELETE /chat/sessions/:sessionId`
+- `GET /chat/stream?message=<text>&sessionId=<id>` (SSE)
 
-All chat endpoints require `Authorization: Bearer <token>`.
+### Admin
 
-## 9) Admin API
-
-Endpoints:
-- `POST /admin/login` with `{ "username": "<ADMIN_USERNAME>", "password": "<ADMIN_PASSWORD>" }`
+- `POST /admin/login` body: `{ "username": "...", "password": "..." }`
 - `GET /admin/users`
+- `POST /admin/users`
+- `POST /admin/users/:userId/reset-password`
 - `DELETE /admin/users/:userId`
 
-`GET` and `DELETE` require `Authorization: Bearer <admin-token>`.
+### Training (admin token required)
 
-Quick test:
+- `GET /admin/training/entries`
+- `POST /admin/training/entries`
+- `POST /admin/training/upload` (`multipart/form-data`, field name: `file`)
+- `DELETE /admin/training/entries/:entryId`
+- `POST /admin/training/run`
+- `GET /admin/training/runs`
+- `GET /admin/training/jobs`
+- `POST /admin/training/eval`
+
+## Notes on Data Storage
+
+- User/chat/session/message data is persisted in PostgreSQL via Prisma.
+- Training data currently uses file storage at:
+  - `backend/data/training-store.json`
+
+For production, consider moving training data/jobs to database + queue workers.
+
+## Useful Commands
 
 ```bash
-curl -N "http://localhost:3001/chat/stream?message=Hello&sessionId=<session-id>" \
-  -H "Authorization: Bearer <token>"
+# run both apps
+npm run dev
+
+# run app separately
+npm run dev:backend
+npm run dev:frontend
+
+# build all
+npm run build
+
+# backend only
+npm run build -w backend
+
+# frontend only
+npm run build -w frontend
 ```
 
-Expected SSE chunks include token data and final `[DONE]`.
+## Troubleshooting
 
-## 10) How Provider Switching Works
+- `EADDRINUSE: 3001`
+  - Another backend process is already running on port `3001`.
+- Prisma error: `The table public.User does not exist`
+  - Run migrations:
+  - `npx prisma migrate deploy --schema backend/prisma/schema.prisma`
+- Frontend `Module not found: @mui/material`
+  - Install workspace deps from root:
+  - `npm install`
+- Admin login fails
+  - Confirm `.env` values for `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_JWT_SECRET`
+  - Restart backend after changing `.env`
+- Chat sends but no response shown
+  - Check backend logs and AI provider config (`AI_PROVIDER`, model availability)
 
-`backend/src/chat/providers/chat-model.factory.ts` selects model based on `AI_PROVIDER`:
-- `ollama` -> `ChatOllama`
-- `openai` -> `ChatOpenAI`
-- `anthropic` -> `ChatAnthropic`
+## Production Hardening Checklist
 
-No controller changes are needed when switching providers.
-
-## 11) Memory Behavior
-
-Chat history is persisted in PostgreSQL (`ChatSession` + `ChatMessage`) and scoped by authenticated user.
-- Same `sessionId` = same conversation thread
-- Different `sessionId` = isolated conversation history
-
-## 12) Next Steps
-
-- Add rate limiting + API key guardrails
-- Add unit/integration tests for `AiService` and SSE endpoint
-- Add deployment configs (e.g., Fly.io, Railway, Render, ECS)
-
-## 13) Troubleshooting
-
-- No model response:
-  - Check Ollama is running and model exists (`ollama list`)
-  - Verify `OLLAMA_BASE_URL` and `AI_MODEL_NAME`
-- SSE not streaming:
-  - Ensure frontend calls backend URL in `NEXT_PUBLIC_API_URL`
-  - Confirm backend returns `text/event-stream`
-- DB errors:
-  - Validate `DATABASE_URL`
-  - Confirm Postgres container is healthy
+- Add rate limits for auth/chat/admin endpoints
+- Add audit log for admin actions
+- Add input/file scanning and stricter file validation for training upload
+- Move training jobs to persistent queue workers
+- Add automated tests (unit + integration + e2e)
+- Add CI pipeline and deployment documentation
+- Rotate secrets and use secret manager in deployment

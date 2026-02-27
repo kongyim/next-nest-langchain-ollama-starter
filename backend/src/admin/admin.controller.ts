@@ -25,6 +25,10 @@ interface CreateUserBody {
   password?: string;
 }
 
+interface ResetPasswordBody {
+  password?: string;
+}
+
 interface CreateTrainingEntryBody {
   title?: string;
   content?: string;
@@ -61,6 +65,15 @@ export class AdminController {
   @UseGuards(AdminGuard)
   createUser(@Body() body: CreateUserBody) {
     return this.adminService.createUser(body.email ?? '', body.password ?? '');
+  }
+
+  @Post('users/:userId/reset-password')
+  @UseGuards(AdminGuard)
+  resetUserPassword(
+    @Param('userId') userId: string,
+    @Body() body: ResetPasswordBody,
+  ) {
+    return this.adminService.resetUserPassword(userId, body.password ?? '');
   }
 
   @Delete('users/:userId')

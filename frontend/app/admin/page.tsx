@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -18,6 +19,7 @@ import {
   ListItemText,
   Paper,
   Stack,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -103,12 +105,17 @@ export default function AdminPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>('users');
 
   const [openCreateUser, setOpenCreateUser] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [creatingUser, setCreatingUser] = useState(false);
+  const [openResetPassword, setOpenResetPassword] = useState(false);
+  const [resetTargetUserId, setResetTargetUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const [openCreateTrainingEntry, setOpenCreateTrainingEntry] = useState(false);
   const [trainingTitle, setTrainingTitle] = useState('');
@@ -132,6 +139,14 @@ export default function AdminPage() {
     }
 
     return err instanceof Error ? err.message : fallback;
+  };
+
+  const showSuccess = (message: string) => {
+    setSuccessMessage(message);
+  };
+
+  const clearSuccess = () => {
+    setSuccessMessage(null);
   };
 
   useEffect(() => {
@@ -276,11 +291,42 @@ export default function AdminPage() {
       setNewEmail('');
       setNewPassword('');
       await loadUsers(token);
+      showSuccess('User created successfully.');
     } catch (err) {
       const message = getNetworkErrorMessage(err, 'Failed to create user.');
       setError(message);
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  const resetUserPassword = async () => {
+    if (!token || !resetTargetUserId) return;
+
+    setResettingPassword(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${resetTargetUserId}/reset-password`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ password: resetPassword }),
+      });
+
+      const data = (await response.json()) as { message?: string };
+      if (!response.ok) {
+        throw new Error(data.message ?? 'Failed to reset password.');
+      }
+
+      setOpenResetPassword(false);
+      setResetTargetUserId(null);
+      setResetPassword('');
+      showSuccess('Password updated successfully.');
+    } catch (err) {
+      const message = getNetworkErrorMessage(err, 'Failed to reset password.');
+      setError(message);
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -306,6 +352,7 @@ export default function AdminPage() {
       setTrainingTitle('');
       setTrainingContent('');
       await loadTraining(token);
+      showSuccess('Training data added successfully.');
     } catch (err) {
       const message = getNetworkErrorMessage(err, 'Failed to create training entry.');
       setError(message);
@@ -338,6 +385,7 @@ export default function AdminPage() {
       }
 
       await loadTraining(token);
+      showSuccess('File uploaded successfully.');
     } catch (err) {
       const message = getNetworkErrorMessage(err, 'Failed to upload training file.');
       setError(message);
@@ -366,6 +414,7 @@ export default function AdminPage() {
 
       setTrainingJobs((prev) => [data, ...prev]);
       await loadTraining(token);
+      showSuccess('Training job queued successfully.');
     } catch (err) {
       const message = getNetworkErrorMessage(err, 'Failed to run training.');
       setError(message);
@@ -418,6 +467,7 @@ export default function AdminPage() {
     }
 
     setTrainingEntries((prev) => prev.filter((entry) => entry.id !== entryId));
+    showSuccess('Training entry deleted successfully.');
   };
 
   const deleteUser = async (userId: string) => {
@@ -439,6 +489,7 @@ export default function AdminPage() {
     }
 
     setUsers((prev) => prev.filter((user) => user.id !== userId));
+    showSuccess('User deleted successfully.');
   };
 
   const logout = () => {
@@ -507,31 +558,38 @@ export default function AdminPage() {
           },
         }}
       >
-        <Toolbar>
-          <Typography variant="h6" fontWeight={700}>
-            Admin Panel
-          </Typography>
-        </Toolbar>
-        <List>
-          <ListItemButton
-            selected={activeSection === 'users'}
-            onClick={() => {
-              setActiveSection('users');
-              void loadUsers(token);
-            }}
-          >
-            <ListItemText primary="User Management" />
-          </ListItemButton>
-          <ListItemButton
-            selected={activeSection === 'training'}
-            onClick={() => {
-              setActiveSection('training');
-              void loadTraining(token);
-            }}
-          >
-            <ListItemText primary="Model Training" />
-          </ListItemButton>
-        </List>
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Toolbar>
+            <Typography variant="h6" fontWeight={700}>
+              Admin Panel
+            </Typography>
+          </Toolbar>
+          <List>
+            <ListItemButton
+              selected={activeSection === 'users'}
+              onClick={() => {
+                setActiveSection('users');
+                void loadUsers(token);
+              }}
+            >
+              <ListItemText primary="User Management" />
+            </ListItemButton>
+            <ListItemButton
+              selected={activeSection === 'training'}
+              onClick={() => {
+                setActiveSection('training');
+                void loadTraining(token);
+              }}
+            >
+              <ListItemText primary="Model Training" />
+            </ListItemButton>
+          </List>
+          <Box sx={{ mt: 'auto', p: 2 }}>
+            <Button variant="outlined" color="inherit" fullWidth onClick={logout}>
+              Logout
+            </Button>
+          </Box>
+        </Box>
       </Drawer>
 
       <Box component="main" sx={{ flex: 1, p: 3 }}>
@@ -547,9 +605,6 @@ export default function AdminPage() {
                 </Button>
                 <Button variant="outlined" onClick={() => void loadUsers(token)} disabled={loading}>
                   Refresh
-                </Button>
-                <Button variant="outlined" color="inherit" onClick={logout}>
-                  Logout
                 </Button>
               </Stack>
             </Stack>
@@ -582,9 +637,22 @@ export default function AdminPage() {
                       <TableCell>{new Date(user.createdAt).toLocaleString()}</TableCell>
                       <TableCell>{user._count.sessions}</TableCell>
                       <TableCell align="right">
-                        <IconButton color="error" size="small" onClick={() => void deleteUser(user.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setResetTargetUserId(user.id);
+                              setResetPassword('');
+                              setOpenResetPassword(true);
+                            }}
+                          >
+                            Reset Password
+                          </Button>
+                          <IconButton color="error" size="small" onClick={() => void deleteUser(user.id)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -836,6 +904,41 @@ export default function AdminPage() {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={openResetPassword} onClose={() => setOpenResetPassword(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Reset User Password</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+            <TextField
+              label="New Password"
+              type="password"
+              size="small"
+              value={resetPassword}
+              onChange={(e) => setResetPassword(e.target.value)}
+              helperText="At least 6 characters"
+              required
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenResetPassword(false);
+              setResetTargetUserId(null);
+              setResetPassword('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void resetUserPassword()}
+            disabled={resettingPassword || resetPassword.length < 6}
+          >
+            {resettingPassword ? 'Updating...' : 'Update Password'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={openCreateTrainingEntry} onClose={() => setOpenCreateTrainingEntry(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add Training Data</DialogTitle>
         <DialogContent>
@@ -885,6 +988,22 @@ export default function AdminPage() {
           event.currentTarget.value = '';
         }}
       />
+
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        onClose={clearSuccess}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={clearSuccess}
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
