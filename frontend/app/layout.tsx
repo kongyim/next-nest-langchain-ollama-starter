@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { MuiProvider } from './mui-provider';
 
 export const metadata: Metadata = {
   title: 'AI Starter Kit',
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <MuiProvider>{children}</MuiProvider>
+      </body>
     </html>
   );
 }

@@ -1,0 +1,58 @@
+{
+  "entries": [
+    {
+      "id": "0b8d9d45-8f97-4495-aaf8-ac9583b1d48b",
+      "title": "train.txt (text/plain)",
+      "content": "This is training text file content for upload testing and should be long enough.",
+      "status": "trained",
+      "createdAt": "2026-02-27T00:10:11.916Z",
+      "updatedAt": "2026-02-27T00:20:45.538Z",
+      "lastTrainedAt": "2026-02-27T00:20:45.538Z"
+    },
+    {
+      "id": "0dfdd2ab-32d1-4140-9ea8-a5eaaa9f72b5",
+      "title": "FAQ",
+      "content": "This is a sample training content block used to test the model training section in admin.",
+      "status": "trained",
+      "createdAt": "2026-02-27T00:06:27.926Z",
+      "updatedAt": "2026-02-27T00:20:45.538Z",
+      "lastTrainedAt": "2026-02-27T00:20:45.538Z"
+    }
+  ],
+  "runs": [
+    {
+      "id": "58aabf87-a5cb-4128-9018-939702ab203a",
+      "startedAt": "2026-02-27T00:20:45.236Z",
+      "finishedAt": "2026-02-27T00:20:45.943Z",
+      "status": "completed",
+      "processedEntries": 2
+    },
+    {
+      "id": "25fef928-0bba-419a-a120-e4447794ceaf",
+      "startedAt": "2026-02-27T00:07:35.091Z",
+      "finishedAt": "2026-02-27T00:07:35.091Z",
+      "status": "completed",
+      "processedEntries": 1
+    },
+    {
+      "id": "6538196b-4cea-4e6f-8ad8-4bd7834db0e3",
+      "startedAt": "2026-02-27T00:06:27.934Z",
+      "finishedAt": "2026-02-27T00:06:27.934Z",
+      "status": "completed",
+      "processedEntries": 1
+    }
+  ],
+  "jobs": [
+    {
+      "id": "05489e79-4d09-413d-adfd-955b67a4bff9",
+      "entryId": null,
+      "status": "completed",
+      "progress": 100,
+      "processedEntries": 2,
+      "createdAt": "2026-02-27T00:20:45.235Z",
+      "startedAt": "2026-02-27T00:20:45.236Z",
+      "finishedAt": "2026-02-27T00:20:45.943Z",
+      "error": null
+    }
+  ]
+}

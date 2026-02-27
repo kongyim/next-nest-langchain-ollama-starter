@@ -77,6 +77,10 @@ Important keys:
 - `OLLAMA_BASE_URL`: default `http://localhost:11434`
 - `AI_PROVIDER`: `ollama` (default), `openai`, or `anthropic`
 - `AI_MODEL_NAME`: e.g. `llama3.1`, `gpt-4o-mini`, `claude-3-5-sonnet-latest`
+- `JWT_SECRET`: required signing key for user JWT
+- `ADMIN_USERNAME`: required admin username
+- `ADMIN_PASSWORD`: required admin password
+- `ADMIN_JWT_SECRET`: required signing key for admin JWT
 - `NEXT_PUBLIC_API_URL`: frontend -> backend URL
 
 ## 4) Install Dependencies (One Command)
@@ -101,6 +105,8 @@ npx shadcn-ui@latest init
 From project root:
 
 ```bash
+npm run prisma:generate -w backend
+npx prisma migrate deploy --schema backend/prisma/schema.prisma
 npm run dev
 ```
 
@@ -128,21 +134,43 @@ Services:
 - Backend: `http://localhost:3001`
 - Postgres: `localhost:5432`
 
-## 7) Chat Streaming API
+## 7) Auth API
 
-Endpoint:
+Endpoints:
+- `POST /auth/register` with `{ "email": "...", "password": "..." }`
+- `POST /auth/login` with `{ "email": "...", "password": "..." }`
+- `GET /auth/me` with `Authorization: Bearer <token>`
+
+## 8) Chat API
+
+Endpoints:
+- `GET /chat/sessions`
+- `POST /chat/sessions`
+- `GET /chat/sessions/:sessionId/messages`
 - `GET /chat/stream?message=<text>&sessionId=<id>`
 - Response: Server-Sent Events (`text/event-stream`)
+
+All chat endpoints require `Authorization: Bearer <token>`.
+
+## 9) Admin API
+
+Endpoints:
+- `POST /admin/login` with `{ "username": "<ADMIN_USERNAME>", "password": "<ADMIN_PASSWORD>" }`
+- `GET /admin/users`
+- `DELETE /admin/users/:userId`
+
+`GET` and `DELETE` require `Authorization: Bearer <admin-token>`.
 
 Quick test:
 
 ```bash
-curl -N "http://localhost:3001/chat/stream?message=Hello&sessionId=test"
+curl -N "http://localhost:3001/chat/stream?message=Hello&sessionId=<session-id>" \
+  -H "Authorization: Bearer <token>"
 ```
 
 Expected SSE chunks include token data and final `[DONE]`.
 
-## 8) How Provider Switching Works
+## 10) How Provider Switching Works
 
 `backend/src/chat/providers/chat-model.factory.ts` selects model based on `AI_PROVIDER`:
 - `ollama` -> `ChatOllama`
@@ -151,21 +179,19 @@ Expected SSE chunks include token data and final `[DONE]`.
 
 No controller changes are needed when switching providers.
 
-## 9) Memory Behavior
+## 11) Memory Behavior
 
-`backend/src/chat/chat.service.ts` uses `BufferMemory` per `sessionId`.
-- Same `sessionId` = shared short-term chat context
+Chat history is persisted in PostgreSQL (`ChatSession` + `ChatMessage`) and scoped by authenticated user.
+- Same `sessionId` = same conversation thread
 - Different `sessionId` = isolated conversation history
 
-## 10) Next Steps
+## 12) Next Steps
 
-- Add persistent chat history (Prisma models + repository layer)
-- Add auth/session ownership
 - Add rate limiting + API key guardrails
 - Add unit/integration tests for `AiService` and SSE endpoint
 - Add deployment configs (e.g., Fly.io, Railway, Render, ECS)
 
-## 11) Troubleshooting
+## 13) Troubleshooting
 
 - No model response:
   - Check Ollama is running and model exists (`ollama list`)

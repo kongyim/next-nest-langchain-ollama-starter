@@ -1,41 +1,124 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ChatRole } from '@prisma/client';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { BufferMemory } from 'langchain/memory';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { PrismaService } from '../prisma/prisma.service';
 import { ChatModelFactory } from './providers/chat-model.factory';
 
 @Injectable()
 export class AiService {
-  private readonly memories = new Map<string, BufferMemory>();
+  constructor(
+    private readonly chatModelFactory: ChatModelFactory,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  constructor(private readonly chatModelFactory: ChatModelFactory) {}
-
-  private getMemory(sessionId: string): BufferMemory {
-    const current = this.memories.get(sessionId);
-    if (current) return current;
-
-    const memory = new BufferMemory({
-      returnMessages: true,
-      memoryKey: 'history',
-      inputKey: 'input',
-      outputKey: 'output',
+  async createSession(userId: string) {
+    const session = await this.prisma.chatSession.create({
+      data: {
+        userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-    this.memories.set(sessionId, memory);
-    return memory;
+    return {
+      ...session,
+      preview: '',
+    };
   }
 
-  async *streamChat(input: string, sessionId = 'default'): AsyncGenerator<string> {
-    const model: BaseChatModel = this.chatModelFactory.create();
-    const memory = this.getMemory(sessionId);
+  async listSessions(userId: string) {
+    const sessions = await this.prisma.chatSession.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        updatedAt: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            content: true,
+          },
+        },
+      },
+    });
 
-    const memoryVars = await memory.loadMemoryVariables({});
-    const history = (memoryVars.history as Array<HumanMessage | AIMessage>) ?? [];
+    return sessions.map((session) => ({
+      id: session.id,
+      title: session.title,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      preview: session.messages[0]?.content ?? '',
+    }));
+  }
+
+  async getSessionMessages(userId: string, sessionId: string) {
+    await this.ensureSessionOwnership(userId, sessionId);
+
+    return this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        role: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async deleteSession(userId: string, sessionId: string) {
+    await this.ensureSessionOwnership(userId, sessionId);
+
+    await this.prisma.chatSession.delete({
+      where: { id: sessionId },
+    });
+
+    return { ok: true };
+  }
+
+  async *streamChat(input: string, userId: string, sessionId: string): AsyncGenerator<string> {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    const model: BaseChatModel = this.chatModelFactory.create();
+    const session = await this.ensureSessionOwnership(userId, sessionId);
+
+    const previousMessages = await this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        role: true,
+        content: true,
+      },
+    });
+
+    const shouldSetTitle = !session.title;
+    const title = shouldSetTitle ? trimmed.slice(0, 60) : undefined;
+
+    await this.prisma.chatMessage.create({
+      data: {
+        sessionId,
+        role: ChatRole.USER,
+        content: trimmed,
+      },
+    });
 
     const messages = [
       new SystemMessage('You are a concise and helpful AI assistant.'),
-      ...history,
-      new HumanMessage(input),
+      ...previousMessages.map((message) =>
+        message.role === ChatRole.USER
+          ? new HumanMessage(message.content)
+          : new AIMessage(message.content),
+      ),
+      new HumanMessage(trimmed),
     ];
 
     let fullResponse = '';
@@ -48,7 +131,42 @@ export class AiService {
       yield text;
     }
 
-    await memory.saveContext({ input }, { output: fullResponse });
+    await this.prisma.chatMessage.create({
+      data: {
+        sessionId,
+        role: ChatRole.ASSISTANT,
+        content: fullResponse,
+      },
+    });
+
+    await this.prisma.chatSession.update({
+      where: { id: sessionId },
+      data: {
+        title,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  private async ensureSessionOwnership(userId: string, sessionId: string) {
+    const session = await this.prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        userId: true,
+        title: true,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Chat session not found.');
+    }
+
+    if (session.userId !== userId) {
+      throw new ForbiddenException('You cannot access this chat session.');
+    }
+
+    return session;
   }
 
   private extractChunkText(content: unknown): string {
