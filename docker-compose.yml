@@ -16,26 +16,30 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - .env
     environment:
       PORT: 3001
-      DATABASE_URL: ${DATABASE_URL}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
-      AI_MODEL_NAME: ${AI_MODEL_NAME}
-      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@db:5432/ai_starter?schema=public}
+      OLLAMA_BASE_URL: ${DOCKER_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      AI_PROVIDER: ${DOCKER_AI_PROVIDER:-ollama}
+      AI_MODEL_NAME: ${DOCKER_AI_MODEL_NAME:-llama3.1}
+      JWT_SECRET: ${DOCKER_JWT_SECRET:-dev-jwt-secret-change-this-before-production}
+      ADMIN_USERNAME: ${DOCKER_ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${DOCKER_ADMIN_PASSWORD:-admin}
+      ADMIN_JWT_SECRET: ${DOCKER_ADMIN_JWT_SECRET:-dev-admin-jwt-secret-change-this-before-production}
+      CORS_ORIGIN: ${DOCKER_CORS_ORIGIN:-http://localhost:3000}
     ports:
       - '3001:3001'
     depends_on:
       - db
+    command: >
+      sh -c "npx prisma migrate deploy --schema prisma/schema.prisma || echo 'Skipping migrate deploy (existing schema)';
+      node dist/main.js"
 
   frontend:
     build:
       context: ./frontend
-    env_file:
-      - .env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: ${DOCKER_NEXT_PUBLIC_API_URL:-http://localhost:3001}
     ports:
       - '3000:3000'
     depends_on:

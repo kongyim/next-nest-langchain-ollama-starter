@@ -109,13 +109,30 @@ npm install
 
 ## Run Locally
 
-1. Start Postgres:
+1. Start full stack with Docker (quickest test):
+
+```bash
+docker compose up -d --build
+```
+
+Apps:
+- Frontend: `http://localhost:3000`
+- Admin: `http://localhost:3000/admin`
+- Backend: `http://localhost:3001`
+
+Default quick-test admin credentials (Docker mode): `admin` / `admin`
+
+Optional Docker overrides use `DOCKER_*` env vars (for example `DOCKER_ADMIN_PASSWORD`, `DOCKER_AI_PROVIDER`, `DOCKER_NEXT_PUBLIC_API_URL`).
+
+2. Or run manually (without Docker app containers):
+
+Start Postgres:
 
 ```bash
 docker compose up -d db
 ```
 
-2. Generate Prisma client + apply migrations:
+Generate Prisma client + apply migrations:
 
 ```bash
 npm run prisma:generate -w backend
