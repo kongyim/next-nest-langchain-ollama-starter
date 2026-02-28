@@ -16,6 +16,28 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const loginUserToken = async (email, password) => {
+  const response = await fetch(`${BACKEND_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) return '';
+  const data = await response.json();
+  return typeof data?.token === 'string' ? data.token : '';
+};
+
+const registerUserToken = async (email, password) => {
+  const response = await fetch(`${BACKEND_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) return '';
+  const data = await response.json();
+  return typeof data?.token === 'string' ? data.token : '';
+};
+
 const loginAdminToken = async (username, password) => {
   const response = await fetch(`${BACKEND_URL}/admin/login`, {
     method: 'POST',
@@ -30,6 +52,14 @@ const loginAdminToken = async (username, password) => {
 const browser = await chromium.launch({ headless: true });
 
 try {
+  let userToken = await loginUserToken(DEMO_EMAIL, DEMO_PASSWORD);
+  if (!userToken) {
+    userToken = await registerUserToken(DEMO_EMAIL, DEMO_PASSWORD);
+  }
+  if (!userToken) {
+    throw new Error('Unable to obtain user auth token.');
+  }
+
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     recordVideo: {
@@ -37,28 +67,35 @@ try {
       size: { width: 1440, height: 900 },
     },
   });
+  await context.addInitScript((token) => {
+    window.localStorage.setItem('auth_token', token);
+  }, userToken);
 
   const page = await context.newPage();
   const video = page.video();
 
   await page.goto(FRONTEND_URL, { waitUntil: 'domcontentloaded' });
   await pause(1200);
-
-  await page.getByLabel('Email').fill(DEMO_EMAIL);
-  await page.getByLabel('Password').fill(DEMO_PASSWORD);
-  await pause(500);
-  await page.getByRole('button', { name: 'Log in' }).click();
-  await page.getByText('History').waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Logout' }).first().waitFor({ timeout: 15000 });
   await pause(2000);
 
-  await page.locator('button:has-text("New chat")').first().click();
+  await page.getByRole('button', { name: 'New chat', exact: true }).first().click();
   await pause(1000);
   await page.getByPlaceholder('Type your message...').fill(
     'Give me a 1-line summary of this starter kit.',
   );
   await pause(600);
   await page.locator('button:has-text("Send")').first().click();
-  await pause(4500);
+  // Wait until SSE streaming finishes and send button is enabled again.
+  // If model streaming hangs, keep the recording moving after a long pause.
+  try {
+    await page.locator('button:has-text("Send"):not([disabled])').first().waitFor({
+      timeout: 45000,
+    });
+  } catch {
+    await pause(8000);
+  }
+  await pause(1400);
 
   let adminToken = await loginAdminToken(ADMIN_USERNAME, ADMIN_PASSWORD);
   if (!adminToken) {
