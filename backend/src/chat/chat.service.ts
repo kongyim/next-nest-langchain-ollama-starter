@@ -4,12 +4,14 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatModelFactory } from './providers/chat-model.factory';
+import { TrainingService } from '../training/training.service';
 
 @Injectable()
 export class AiService {
   constructor(
     private readonly chatModelFactory: ChatModelFactory,
     private readonly prisma: PrismaService,
+    private readonly trainingService: TrainingService,
   ) {}
 
   async createSession(userId: string) {
@@ -111,8 +113,22 @@ export class AiService {
       },
     });
 
+    const trainingSources = this.trainingService.search(trimmed, 3);
+    const contextBlock = trainingSources
+      .map((source, index) => `Source ${index + 1} (${source.title}): ${source.snippet}`)
+      .join('\n');
+
+    const systemPrompt = contextBlock
+      ? `You are a concise and helpful AI assistant.
+Use the training context below when it is relevant.
+If the context is not enough to answer confidently, say that clearly.
+
+Training context:
+${contextBlock}`
+      : 'You are a concise and helpful AI assistant.';
+
     const messages = [
-      new SystemMessage('You are a concise and helpful AI assistant.'),
+      new SystemMessage(systemPrompt),
       ...previousMessages.map((message) =>
         message.role === ChatRole.USER
           ? new HumanMessage(message.content)

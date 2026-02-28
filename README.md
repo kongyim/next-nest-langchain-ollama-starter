@@ -15,11 +15,12 @@ Production-oriented starter kit with:
 
 ## Features
 
-- User auth (`/auth/register`, `/auth/login`)
+- User auth with signup + login (`/auth/register`, `/auth/login`)
 - Chat sessions and messages persisted in Postgres
 - Chat sidebar history (select session to load full conversation)
 - Delete chat session
 - Streaming response via SSE (`/chat/stream`)
+- Training-aware responses (chat injects top matching training snippets as context)
 - Admin login at `/admin`
 - Admin user management:
   - List users (with last login)
@@ -86,14 +87,17 @@ cp .env.example .env
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
 - `ADMIN_JWT_SECRET`
+- `CORS_ORIGIN` (comma-separated allowed origins for backend CORS)
 - `NEXT_PUBLIC_API_URL`
 
 Example admin login values:
 
 ```env
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin
+ADMIN_USERNAME=your-admin-username
+ADMIN_PASSWORD=your-strong-admin-password
 ```
+
+Generate long random values for `JWT_SECRET` and `ADMIN_JWT_SECRET` and avoid default admin credentials before sharing or deploying.
 
 ## Install Dependencies
 
@@ -169,6 +173,7 @@ Apps:
 - User/chat/session/message data is persisted in PostgreSQL via Prisma.
 - Training data currently uses file storage at:
   - `backend/data/training-store.json`
+- Current training retrieval is keyword-based and injected into chat context.
 
 For production, consider moving training data/jobs to database + queue workers.
 
@@ -190,6 +195,12 @@ npm run build -w backend
 
 # frontend only
 npm run build -w frontend
+
+# lint frontend (CI-friendly, non-interactive)
+npm run lint -w frontend
+
+# backend unit tests
+npm run test -w backend
 ```
 
 ## Troubleshooting
@@ -210,10 +221,10 @@ npm run build -w frontend
 
 ## Production Hardening Checklist
 
-- Add rate limits for auth/chat/admin endpoints
+- Keep strict rate limits for auth/chat/admin endpoints
 - Add audit log for admin actions
 - Add input/file scanning and stricter file validation for training upload
 - Move training jobs to persistent queue workers
-- Add automated tests (unit + integration + e2e)
+- Expand automated tests (integration + e2e)
 - Add CI pipeline and deployment documentation
 - Rotate secrets and use secret manager in deployment

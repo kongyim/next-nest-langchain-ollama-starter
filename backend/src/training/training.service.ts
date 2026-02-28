@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
+import { rankTrainingEntries, TrainingSearchResult } from './training-search';
 
 export type TrainingStatus = 'idle' | 'trained';
 export type TrainingJobStatus = 'queued' | 'running' | 'completed' | 'failed';
@@ -57,6 +58,11 @@ export class TrainingService {
 
   listJobs(): TrainingJob[] {
     return this.readStore().jobs;
+  }
+
+  search(query: string, limit = 3): TrainingSearchResult[] {
+    const entries = this.readStore().entries;
+    return rankTrainingEntries(query, entries, limit);
   }
 
   createEntry(title: string, content: string): TrainingEntry {
@@ -154,44 +160,14 @@ export class TrainingService {
       throw new BadRequestException('Query is required.');
     }
 
-    const tokens = cleanQuery
-      .toLowerCase()
-      .split(/\W+/)
-      .filter((token) => token.length >= 2);
+    const sources = this.search(cleanQuery, limit);
 
-    const entries = this.readStore().entries;
-    const scored = entries
-      .map((entry) => {
-        const haystack = `${entry.title}\n${entry.content}`.toLowerCase();
-        let score = 0;
-        for (const token of tokens) {
-          if (haystack.includes(token)) {
-            score += 1;
-          }
-        }
-
-        return {
-          entry,
-          score,
-        };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, Math.max(1, Math.min(10, limit)));
-
-    if (scored.length === 0) {
+    if (sources.length === 0) {
       return {
         answer: 'No relevant training data found for this query.',
         sources: [],
       };
     }
-
-    const sources = scored.map((item) => ({
-      id: item.entry.id,
-      title: item.entry.title,
-      score: item.score,
-      snippet: this.snippet(item.entry.content),
-    }));
 
     const answer = sources
       .map((source, index) => `${index + 1}. ${source.title}: ${source.snippet}`)
@@ -308,12 +284,6 @@ export class TrainingService {
     if (!existsSync(this.filePath)) {
       writeFileSync(this.filePath, JSON.stringify({ entries: [], runs: [], jobs: [] }, null, 2), 'utf8');
     }
-  }
-
-  private snippet(content: string, maxLength = 180): string {
-    const clean = content.replace(/\s+/g, ' ').trim();
-    if (clean.length <= maxLength) return clean;
-    return `${clean.slice(0, maxLength)}...`;
   }
 
   private sleep(ms: number): Promise<void> {

@@ -6,6 +6,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "dev": "nest start --watch",
+    "test": "npm run build && node --test $(find dist -name '*.test.js' -type f)",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },

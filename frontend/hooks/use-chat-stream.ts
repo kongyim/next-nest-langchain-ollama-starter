@@ -213,8 +213,12 @@ export function useChatStream() {
     }
   }, [token, sessions, currentSessionId, loadMessages]);
 
-  const authRequest = useCallback(async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
+  const authRequest = useCallback(async (
+    mode: 'login' | 'register',
+    email: string,
+    password: string,
+  ) => {
+    const response = await fetch(`${API_URL}/auth/${mode}`, {
       method: 'POST',
       cache: 'no-store',
       headers: {
@@ -226,7 +230,8 @@ export function useChatStream() {
     const data = (await response.json()) as { token?: string; user?: AuthUser; message?: string };
 
     if (!response.ok || !data.token || !data.user) {
-      throw new Error(data.message ?? 'login failed.');
+      const fallback = mode === 'register' ? 'registration failed.' : 'login failed.';
+      throw new Error(data.message ?? fallback);
     }
 
     setToken(data.token);
@@ -262,7 +267,12 @@ export function useChatStream() {
 
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
-    await authRequest(email, password);
+    await authRequest('login', email, password);
+  }, [authRequest]);
+
+  const register = useCallback(async (email: string, password: string) => {
+    setError(null);
+    await authRequest('register', email, password);
   }, [authRequest]);
 
   const logout = useCallback(() => {
@@ -396,6 +406,7 @@ export function useChatStream() {
     isLoadingSession,
     error,
     login,
+    register,
     logout,
     sendMessage,
     createSession,

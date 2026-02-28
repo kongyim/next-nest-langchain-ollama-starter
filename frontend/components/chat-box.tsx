@@ -28,6 +28,7 @@ export function ChatBox() {
   const [input, setInput] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const {
     token,
     user,
@@ -38,6 +39,7 @@ export function ChatBox() {
     isLoadingSession,
     error,
     login,
+    register,
     logout,
     sendMessage,
     createSession,
@@ -72,6 +74,11 @@ export function ChatBox() {
 
   const onLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (authMode === 'register') {
+      await register(email, password);
+      return;
+    }
+
     await login(email, password);
   };
 
@@ -81,14 +88,16 @@ export function ChatBox() {
         <Paper elevation={2} sx={{ width: '100%', maxWidth: 420, p: 3 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
             <Typography variant="h5" fontWeight={700}>
-              Login
+              {authMode === 'register' ? 'Create account' : 'Login'}
             </Typography>
             <IconButton onClick={handleToggleMode} aria-label="Toggle dark mode">
               {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sign in to see your chat history and continue conversations.
+            {authMode === 'register'
+              ? 'Create your account to start chatting.'
+              : 'Sign in to see your chat history and continue conversations.'}
           </Typography>
 
           <Stack component="form" spacing={1.5} onSubmit={onLogin}>
@@ -109,7 +118,17 @@ export function ChatBox() {
               required
             />
             <Button type="submit" variant="contained" fullWidth>
-              Log in
+              {authMode === 'register' ? 'Sign up' : 'Log in'}
+            </Button>
+            <Button
+              type="button"
+              variant="text"
+              fullWidth
+              onClick={() => setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))}
+            >
+              {authMode === 'register'
+                ? 'Already have an account? Log in'
+                : 'No account yet? Sign up'}
             </Button>
           </Stack>
 

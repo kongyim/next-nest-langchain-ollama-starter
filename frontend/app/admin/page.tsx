@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -137,13 +137,13 @@ export default function AdminPage() {
     'Content-Type': 'application/json',
   });
 
-  const getNetworkErrorMessage = (err: unknown, fallback: string) => {
+  const getNetworkErrorMessage = useCallback((err: unknown, fallback: string) => {
     if (err instanceof TypeError && err.message.includes('fetch')) {
       return `Cannot reach backend at ${API_URL}. Ensure backend is running on port 3001.`;
     }
 
     return err instanceof Error ? err.message : fallback;
-  };
+  }, []);
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
@@ -153,29 +153,7 @@ export default function AdminPage() {
     setSuccessMessage(null);
   };
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem('admin_token');
-    if (!stored) return;
-    setToken(stored);
-    void loadUsers(stored);
-    void loadTraining(stored);
-  }, []);
-
-  useEffect(() => {
-    if (!token) return;
-    if (activeSection !== 'training') return;
-
-    const hasActiveJob = trainingJobs.some((job) => job.status === 'queued' || job.status === 'running');
-    if (!hasActiveJob) return;
-
-    const timer = setInterval(() => {
-      void loadTraining(token);
-    }, 2000);
-
-    return () => clearInterval(timer);
-  }, [activeSection, token, trainingJobs]);
-
-  const loadUsers = async (adminToken: string) => {
+  const loadUsers = useCallback(async (adminToken: string) => {
     setLoading(true);
     setError(null);
 
@@ -201,9 +179,9 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getNetworkErrorMessage]);
 
-  const loadTraining = async (adminToken: string) => {
+  const loadTraining = useCallback(async (adminToken: string) => {
     try {
       const [entriesResponse, runsResponse, jobsResponse] = await Promise.all([
         fetch(`${API_URL}/admin/training/entries`, {
@@ -240,7 +218,29 @@ export default function AdminPage() {
       const message = getNetworkErrorMessage(err, 'Failed to load training data.');
       setError(message);
     }
-  };
+  }, [getNetworkErrorMessage]);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem('admin_token');
+    if (!stored) return;
+    setToken(stored);
+    void loadUsers(stored);
+    void loadTraining(stored);
+  }, [loadTraining, loadUsers]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (activeSection !== 'training') return;
+
+    const hasActiveJob = trainingJobs.some((job) => job.status === 'queued' || job.status === 'running');
+    if (!hasActiveJob) return;
+
+    const timer = setInterval(() => {
+      void loadTraining(token);
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [activeSection, loadTraining, token, trainingJobs]);
 
   const onLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -970,7 +970,7 @@ export default function AdminPage() {
               minRows={8}
               value={trainingContent}
               onChange={(e) => setTrainingContent(e.target.value)}
-              helperText="Paste knowledge text for the assistant to learn from later indexing/training pipelines."
+              helperText="Paste knowledge text. Matching snippets are injected into chat responses."
               required
             />
           </Stack>
