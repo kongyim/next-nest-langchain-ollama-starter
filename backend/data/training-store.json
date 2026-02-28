@@ -1,13 +1,49 @@
 {
   "entries": [
     {
+      "id": "c5a0dddf-355b-4ccd-9ef5-58b859efb706",
+      "title": "Setup help",
+      "content": "After cloning, run npm install, start Postgres with docker compose up -d db, then run npm run dev from root.",
+      "status": "trained",
+      "createdAt": "2026-02-28T00:46:57.589Z",
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
+    },
+    {
+      "id": "d3f919f8-88c3-41b6-8399-a78825a6a582",
+      "title": "Refund policy",
+      "content": "Refunds are accepted within 7 days after purchase for technical issues that cannot be resolved quickly.",
+      "status": "trained",
+      "createdAt": "2026-02-28T00:46:57.578Z",
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
+    },
+    {
+      "id": "5e82586a-553d-4eb2-9d5e-fec8bb2481b7",
+      "title": "Setup help",
+      "content": "After cloning, run npm install, start Postgres with docker compose up -d db, then run npm run dev from root.",
+      "status": "trained",
+      "createdAt": "2026-02-28T00:46:29.681Z",
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
+    },
+    {
+      "id": "995860c8-0f2c-492d-9cea-622d22a99235",
+      "title": "Refund policy",
+      "content": "Refunds are accepted within 7 days after purchase for technical issues that cannot be resolved quickly.",
+      "status": "trained",
+      "createdAt": "2026-02-28T00:46:29.664Z",
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
+    },
+    {
       "id": "0b8d9d45-8f97-4495-aaf8-ac9583b1d48b",
       "title": "train.txt (text/plain)",
       "content": "This is training text file content for upload testing and should be long enough.",
       "status": "trained",
       "createdAt": "2026-02-27T00:10:11.916Z",
-      "updatedAt": "2026-02-27T00:20:45.538Z",
-      "lastTrainedAt": "2026-02-27T00:20:45.538Z"
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
     },
     {
       "id": "0dfdd2ab-32d1-4140-9ea8-a5eaaa9f72b5",
@@ -15,11 +51,25 @@
       "content": "This is a sample training content block used to test the model training section in admin.",
       "status": "trained",
       "createdAt": "2026-02-27T00:06:27.926Z",
-      "updatedAt": "2026-02-27T00:20:45.538Z",
-      "lastTrainedAt": "2026-02-27T00:20:45.538Z"
+      "updatedAt": "2026-02-28T00:46:57.902Z",
+      "lastTrainedAt": "2026-02-28T00:46:57.902Z"
     }
   ],
   "runs": [
+    {
+      "id": "9d538c93-1d74-4df1-bcdc-a9678d520e23",
+      "startedAt": "2026-02-28T00:46:57.600Z",
+      "finishedAt": "2026-02-28T00:46:59.115Z",
+      "status": "completed",
+      "processedEntries": 6
+    },
+    {
+      "id": "7662eded-ccfb-4dec-9bdf-6677963ccd04",
+      "startedAt": "2026-02-28T00:46:29.697Z",
+      "finishedAt": "2026-02-28T00:46:30.806Z",
+      "status": "completed",
+      "processedEntries": 4
+    },
     {
       "id": "58aabf87-a5cb-4128-9018-939702ab203a",
       "startedAt": "2026-02-27T00:20:45.236Z",
@@ -43,6 +93,28 @@
     }
   ],
   "jobs": [
+    {
+      "id": "c768b428-c04e-40f3-8d59-3f4b4ae7f37a",
+      "entryId": null,
+      "status": "completed",
+      "progress": 100,
+      "processedEntries": 6,
+      "createdAt": "2026-02-28T00:46:57.600Z",
+      "startedAt": "2026-02-28T00:46:57.600Z",
+      "finishedAt": "2026-02-28T00:46:59.115Z",
+      "error": null
+    },
+    {
+      "id": "9ae1a860-6bdb-4ba0-b07c-ce607f1b6aa4",
+      "entryId": null,
+      "status": "completed",
+      "progress": 100,
+      "processedEntries": 4,
+      "createdAt": "2026-02-28T00:46:29.696Z",
+      "startedAt": "2026-02-28T00:46:29.697Z",
+      "finishedAt": "2026-02-28T00:46:30.806Z",
+      "error": null
+    },
     {
       "id": "05489e79-4d09-413d-adfd-955b67a4bff9",
       "entryId": null,
