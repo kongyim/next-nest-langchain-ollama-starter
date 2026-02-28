@@ -267,12 +267,22 @@ export function useChatStream() {
 
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
-    await authRequest('login', email, password);
+    try {
+      await authRequest('login', email, password);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'login failed.';
+      setError(message);
+    }
   }, [authRequest]);
 
   const register = useCallback(async (email: string, password: string) => {
     setError(null);
-    await authRequest('register', email, password);
+    try {
+      await authRequest('register', email, password);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'registration failed.';
+      setError(message);
+    }
   }, [authRequest]);
 
   const logout = useCallback(() => {

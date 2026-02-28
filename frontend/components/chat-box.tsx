@@ -117,6 +117,11 @@ export function ChatBox() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {error && (
+              <Typography color="error" variant="body2">
+                {error}
+              </Typography>
+            )}
             <Button type="submit" variant="contained" fullWidth>
               {authMode === 'register' ? 'Sign up' : 'Log in'}
             </Button>
@@ -131,12 +136,6 @@ export function ChatBox() {
                 : 'No account yet? Sign up'}
             </Button>
           </Stack>
-
-          {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 1.5 }}>
-              {error}
-            </Typography>
-          )}
         </Paper>
       </Box>
     );
