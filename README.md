@@ -228,3 +228,7 @@ npm run test -w backend
 - Expand automated tests (integration + e2e)
 - Add CI pipeline and deployment documentation
 - Rotate secrets and use secret manager in deployment
+
+## Selling This Starter
+
+- Gumroad launch playbook (pricing, copy, screenshots, FAQ): `docs/GUMROAD_LAUNCH.md`
