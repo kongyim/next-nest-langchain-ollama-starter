@@ -117,14 +117,14 @@ export function ChatBox() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <Button type="submit" variant="contained" fullWidth>
+              {authMode === 'register' ? 'Sign up' : 'Log in'}
+            </Button>
             {error && (
               <Typography color="error" variant="body2">
                 {error}
               </Typography>
             )}
-            <Button type="submit" variant="contained" fullWidth>
-              {authMode === 'register' ? 'Sign up' : 'Log in'}
-            </Button>
             <Button
               type="button"
               variant="text"
